@@ -11,7 +11,7 @@
                 *assert*             true}
 
   :dependencies
-  [[com.taoensso/encore "3.6.0"]]
+  [[com.taoensso/encore "3.9.1"]]
 
   :plugins
   [[lein-pprint    "1.3.2"]
@@ -33,26 +33,30 @@
    :test     {:dependencies
               [[org.clojure/test.check "1.1.0"]]}}
 
-  :cljsbuild
-  {:test-commands
-   {"node"    ["node" :node-runner "target/main.js"]
-    "phantom" ["phantomjs" :runner "target/main.js"]}
+  :test-paths ["test" "src"]
 
-   :builds
-   [{:id :main
-     :source-paths ["src" "test"]
+  :cljsbuild
+  {:builds
+   {:main
+    {:source-paths ["src" "test"]
      :compiler
      {:output-to "target/main.js"
       :optimizations :advanced
-      :pretty-print false}}]}
+      :pretty-print false}}}
+
+   :test-commands {"node" ["node" "target/main.js"]}}
 
   :aliases
   {"start-dev"  ["with-profile" "+dev" "repl" ":headless"]
+   "deploy-lib" ["do" ["build-once"] ["deploy" "clojars"] ["install"]]
    "build-once" ["cljsbuild" "once"]
-   "deploy-lib" ["do" "build-once," "deploy" "clojars," "install"]
-   "test-all"   ["do" "clean,"
-                 "with-profile" "+1.10:+1.9:+1.8:+1.7" "test,"
-                 "with-profile" "+test" "cljsbuild"    "test"]}
+   "test-cljs"  ["cljsbuild" "test"]
+   "test-all"
+   ["do"
+    ["clean"]
+    #_["with-profile" "+1.10:+1.9:+1.8:+1.7" "test"]
+    [            "test"]
+    ["cljsbuild" "test"]]}
 
   :repositories
   {"sonatype-oss-public"

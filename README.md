@@ -19,7 +19,7 @@ A small, **beginner-friendly** collection of common statistics utils handy for d
 
 ## Features
 
- * Small, simple cross-platform **all-Clojure/Script codebase**. Handy as a reference.
+ * Small, simple cross-platform **pure Clojure/Script codebase**. Handy as a reference.
  * Pleasant, consistant [API][] with **beginner-friendly documentation**.
 
 ## Quickstart
