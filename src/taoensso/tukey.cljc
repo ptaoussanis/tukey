@@ -278,12 +278,13 @@
   ^double [xs]
   (impl/is-not-zero "`median`: need >0 values" {:xs xs} (count xs))
   (let [xs (impl/sorted-doubles xs)]
-    (impl/sorted-median xs)))
+    (impl/sorted-percentile 0.5 xs)))
 
 (test/deftest test-median
   (is (enc/thrown (median [])))
-  (is (=          (median [2        ]) 2.0))
-  (is (=          (median [1 5 2 4 3]) 3.0)))
+  (is (= (median [2          ]) 2.0))
+  (is (= (median [1 2 3.1 4 5]) 3.1))
+  (is (= (median [1 2     4 5]) 3.0)))
 
 (defn- variance-sum-rf
   [^double xbar ^double acc x]
@@ -391,26 +392,26 @@
                     (covariance [1 2 3 4] [ 1  2  3  4])) 1.25)))
 
 (defn percentiles
-  "Returns ?[min p25 p50 p75 p90 p95 p99 max] in:
+  "Returns ?[min p25 p50 p75 p90 p95 p99 max] doubles in:
     - O(1) for Sorted types (SortedLongs, SortedDoubles),
     - O(n) otherwise."
   [xs]
   (let [max-idx (dec (count xs))]
     (when (>= max-idx 0)
       (let [xs (if (impl/sorted-fixnums? xs) xs (impl/sorted-doubles xs))]
-        [(nth xs 0)
-         (nth xs (Math/round (* max-idx 0.25)))
-         (nth xs (Math/round (* max-idx 0.50)))
-         (nth xs (Math/round (* max-idx 0.75)))
-         (nth xs (Math/round (* max-idx 0.90)))
-         (nth xs (Math/round (* max-idx 0.95)))
-         (nth xs (Math/round (* max-idx 0.99)))
-         (nth xs                max-idx)]))))
+        [(double (nth xs 0))
+         (impl/double-nth xs (* max-idx 0.25))
+         (impl/double-nth xs (* max-idx 0.50))
+         (impl/double-nth xs (* max-idx 0.75))
+         (impl/double-nth xs (* max-idx 0.90))
+         (impl/double-nth xs (* max-idx 0.95))
+         (impl/double-nth xs (* max-idx 0.99))
+         (double (nth xs max-idx))]))))
 
 (test/deftest test-percentiles
-  (is (= (percentiles                 [1 5 2 4 3])  [1.0 2.0 3.0 4.0 5.0 5.0 5.0 5.0]))
-  (is (= (percentiles (sorted-doubles [1 5 2 4 3])) [1.0 2.0 3.0 4.0 5.0 5.0 5.0 5.0]))
-  (is (= (percentiles (sorted-longs   [1 5 2 4 3])) [1   2   3   4   5   5   5   5])))
+  (is (= (percentiles                 [1 5 2 4 3])  [1.0 2.0 3.0 4.0 4.6 4.8 4.96 5.0]))
+  (is (= (percentiles (sorted-doubles [1 5 2 4 3])) [1.0 2.0 3.0 4.0 4.6 4.8 4.96 5.0]))
+  (is (= (percentiles (sorted-longs   [1 5 2 4 3])) [1.0 2.0 3.0 4.0 4.6 4.8 4.96 5.0])))
 
 (defn ranks<=
   "Returns the number of ranks ∈ ℕ of `xs` <= given `y` in O(log_n)."

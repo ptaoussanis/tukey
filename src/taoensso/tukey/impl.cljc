@@ -248,16 +248,6 @@
          (goog.array/sort a)
          (->SortedDoubles a (delay (hash-ordered-coll a)) nil)))))
 
-(defn sorted-min        [  x] (let [max-idx (dec (count (is-sorted x)))] (when (>= max-idx 0) (nth x 0))))
-(defn sorted-max        [  x] (let [max-idx (dec (count (is-sorted x)))] (when (>= max-idx 0) (nth x max-idx))))
-(defn sorted-percentile [p x] (let [max-idx (dec (count (is-sorted x)))] (when (>= max-idx 0) (nth x (Math/round (* max-idx (double (is-p p))))))))
-(defn sorted-median     [  x] (sorted-percentile 0.5 x))
-
-(comment
-  (sorted-median          (sorted-longs []))
-  (sorted-percentile 0.77 (sorted-longs [1 5 2 4 3]))
-  (sorted-percentiles     (sorted-longs [1 5 2 4 3])))
-
 (test/deftest test-sorted-fixnums
   (test/testing "Sorted fixnums"
 
@@ -304,6 +294,53 @@
                    (sorted-doubles [5 6 7 8])
                    (sorted-longs   [1 2 3 4])))
               3))))))
+
+(defn sorted-min "Returns ?el" [xs] (let [max-idx (dec (count (is-sorted xs)))] (when (>= max-idx 0) (nth xs 0))))
+(defn sorted-max "Returns ?el" [xs] (let [max-idx (dec (count (is-sorted xs)))] (when (>= max-idx 0) (nth xs max-idx))))
+
+(defn sorted-percentile-element
+  "Like `sorted-percentile`, but return an actual ?element that's as close as
+  possible to true median."
+  [p xs]
+  (let [max-idx (dec (count (is-sorted xs)))]
+    (when (>= max-idx 0)
+      (let [idx (* max-idx (double (is-p p)))]
+        (nth xs (Math/round idx))))))
+
+(defn double-nth "Returns double" [xs ^double idx]
+  (let [idx-floor (Math/floor idx)
+        idx-ceil  (Math/ceil  idx)]
+
+    (if (== idx-ceil idx-floor)
+      (double (nth xs (int idx)))
+
+      ;; Generalization of (floor+ceil)/2
+      (let [weight-floor (- idx-ceil idx)
+            weight-ceil  (- 1 weight-floor)]
+        (+
+          (* weight-floor (double (nth xs (int idx-floor))))
+          (* weight-ceil  (double (nth xs (int idx-ceil)))))))))
+
+(test/deftest test-double-nth
+  (is (= (double-nth [1  3] 0.5)  2.0))
+  (is (= (double-nth [1 10] 0.5)  5.5))
+  (is (= (double-nth [1 10] 0.75) 7.75)))
+
+(defn sorted-percentile "Returns ?double" [p xs]
+  (let [max-idx (dec (count (is-sorted xs)))]
+    (when (>= max-idx 0)
+      (let [idx (* max-idx (double (is-p p)))]
+        (double-nth xs idx)))))
+
+(test/deftest test-percentiles
+  (is (nil? (sorted-percentile         0.5  (sorted-longs   []))))
+  (is (=    (sorted-percentile         0.5  (sorted-doubles [1 2 3.1 4 5])) 3.1))
+  (is (=    (sorted-percentile         0.5  (sorted-doubles [1 2     4 5])) 3.0))
+  (is (=    (sorted-percentile         0.77 (sorted-longs   [1 5 2 4 3]))   4.08))
+
+  (is (=    (sorted-percentile-element 0.5  (sorted-doubles [1 2 3.1 4 5])) 3.1))
+  (is (=    (sorted-percentile-element 0.5  (sorted-doubles [1 2     4 5])) 4.0))
+  (is (=    (sorted-percentile-element 0.77 (sorted-longs   [1 5 2 4 3]))     4)))
 
 ;;;; Math
 
